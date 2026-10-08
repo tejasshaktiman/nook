@@ -67,18 +67,29 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
 .pin-card{text-align:center}.pin-card h2{margin-bottom:8px}.pin-card p{font-size:12px;color:var(--muted);margin-bottom:17px}.pin-input{width:150px;text-align:center;font-size:24px;letter-spacing:8px;margin:auto}
 .toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%) translateY(10px);background:#fff;color:#111;padding:10px 15px;border-radius:10px;font-size:12px;opacity:0;pointer-events:none;transition:.25s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%)}
 .auth{position:absolute;inset:0;display:grid;place-items:center;z-index:80;background:radial-gradient(circle at 50% 40%,#1a1d24,#090a0d 65%);padding:20px}.auth-card{width:min(410px,100%);border-radius:22px;padding:30px}.auth-card h1{font-size:32px;letter-spacing:-1.5px}.auth-card>p{color:var(--muted);font-size:13px;margin:7px 0 25px}.auth-form{display:grid;gap:12px}.auth-form label{font-size:11px;color:var(--muted)}.auth-form input{width:100%;margin-top:6px}.auth-switch{text-align:center;margin-top:17px!important}.link{border:0;background:none;text-decoration:underline;color:#fff}.error{font-size:11px;color:var(--danger);min-height:14px}
+
+/* V1 polish: clickable metrics, quick settings, atmosphere */
+.metric.clickable{cursor:pointer;transition:background .18s,transform .18s}.metric.clickable:hover{background:rgba(255,255,255,.10);transform:translateY(-1px)}
+.quick-menu{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);min-width:260px;padding:10px;border-radius:16px;background:rgba(18,20,25,.92);border:1px solid var(--line);backdrop-filter:blur(20px);z-index:30;box-shadow:0 18px 55px rgba(0,0,0,.35)}
+.quick-menu h4{font-size:11px;color:var(--muted);font-weight:600;padding:3px 6px 9px;text-transform:uppercase;letter-spacing:1px}
+.quick-options{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.quick-option{border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:11px;padding:10px 9px;text-align:left;font-size:12px;display:flex;justify-content:space-between;align-items:center}.quick-option.active{background:#fff;color:#111;border-color:#fff}.quick-option small{opacity:.65}
+.coin-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}.coin-row:last-child{border-bottom:0}.coin-row span:last-child{font-weight:700;color:#fff}.streak-line{position:relative;margin:20px 2px 10px;height:58px}.streak-line:before{content:"";position:absolute;left:10px;right:10px;top:23px;height:2px;background:#343943}.milestone{position:absolute;top:0;transform:translateX(-50%);text-align:center;font-size:10px;color:var(--muted)}.milestone i{display:block;margin:auto auto 5px;width:14px;height:14px;border-radius:50%;border:2px solid #626975;background:#171a20}.milestone.current i{background:#fff;border-color:#fff}.milestone.current{color:#fff}.milestone.big i{width:18px;height:18px}.reward-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:14px}
+.timer-edit{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:11px}.timer-edit button{border:0;background:transparent;color:#777e89;font-size:11px;text-decoration:underline}.timer-edit button:hover{color:#fff}
+.custom-time{display:flex;gap:8px;align-items:center}.custom-time input{width:100px;text-align:center}.effect{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}.drop,.flake,.petal{position:absolute;top:-30px;animation:fall linear infinite;opacity:.65}.drop{width:1px;height:18px;background:rgba(210,225,255,.7);border-radius:50%}.flake{font-size:12px;color:#fff}.petal{font-size:12px;color:#ffd5e8}.light-glow{position:absolute;left:50%;top:47%;width:390px;height:390px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,244,180,.14),transparent 67%);filter:blur(3px);pointer-events:none;z-index:1}.light-glow+.timer-wrap{z-index:3}
+@keyframes fall{to{transform:translate3d(var(--drift),115vh,0) rotate(360deg)}}
+
 @media(max-width:700px){.task-panel{top:90px}.goal{display:none}.metrics .metric:nth-child(n+3){display:none}.topbar{left:16px;right:16px}.bottom-left{display:none}.bottom-right{right:16px}.dock{bottom:14px}.space-canvas{inset:90px 12px 70px}}
 </style>
 </head>
 <body>
-<div class="app" id="app">
+<div class="app" id="app"><div class="effect" id="effectLayer"></div><div class="light-glow hidden" id="lightGlow"></div>
 
 <section class="view" id="dashboard">
   <div class="topbar">
     <div class="brand">FocusSpace <span>• V1</span></div>
     <div class="metrics">
-      <div class="metric">🪙 <b id="coins">30</b></div>
-      <div class="metric">🔥 <b id="streak">1</b></div>
+      <button class="metric clickable" id="coinMetric">🪙 <b id="coins">30</b></button>
+      <button class="metric clickable" id="streakMetric">🔥 <b id="streak">1</b></button>
       <div class="metric">🎯 <b id="goalText">0 / 60 min</b></div>
       <div class="metric">🕒 <b id="clock">--:--</b></div>
     </div>
@@ -100,19 +111,19 @@ button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2
 
   <div class="timer-wrap">
     <div class="timer" id="timer">60:00</div>
-    <div class="timer-label" id="timerLabel">ready to focus</div>
+    <div class="timer-label" id="timerLabel">ready to focus</div><div class="timer-edit"><button id="editTimer">set focus duration</button></div>
     <div class="timer-actions">
       <button class="primary" id="startBtn">Start focus</button>
       <button class="secondary" id="resetBtn">Reset</button>
     </div>
   </div>
 
-  <div class="bottom-left"><div class="social">focusspace · build your own pace</div></div>
+  <div class="bottom-left" style="display:grid;gap:7px"><button class="icon-btn" id="socialBtn">◎ Socials</button><div class="social">focusspace · build your own pace</div></div>
   <div class="bottom-right"><button class="space-btn" id="spaceBtn">My Space ↗</button></div>
 
-  <nav class="dock" aria-label="Productivity tools">
+  <div class="quick-menu hidden" id="weatherMenu"><h4>Quick atmosphere · choose up to 2</h4><div class="quick-options"><button class="quick-option" data-effect="rain">🌧️ Rain <small>soft</small></button><button class="quick-option" data-effect="snow">❄️ Snow <small>calm</small></button><button class="quick-option" data-effect="light">☀️ Light <small>glow</small></button><button class="quick-option" data-effect="spring">🌸 Spring <small>petals</small></button></div></div><nav class="dock" aria-label="Productivity tools">
     <button data-open="shop" title="Shop">🛒</button>
-    <button data-open="weather" title="Weather">🌧️</button>
+    <button id="weatherBtn" title="Quick weather settings">🌦️</button>
     <button data-open="music" title="Music">🎵</button>
     <button data-open="stats" title="Stats">📊</button>
   </nav>
@@ -185,6 +196,7 @@ const state = {
   tasks: [],
   weather: false,
   music: false,
+  effects: [],
   items: [
     {id:"plant",name:"Plant",emoji:"🪴",price:15,owned:true},
     {id:"cat",name:"Cat",emoji:"🐈",price:30,owned:false},
@@ -233,6 +245,7 @@ function render(){
   `).join("");
 
   renderSpaceItems();
+  renderEffects();
 }
 
 function escapeHTML(str){
@@ -243,6 +256,7 @@ function tick(){
   if(!state.running) return;
   state.remaining--;
   state.focusToday = Math.min(60,state.focusToday + 1/60);
+  if(state.running && Math.floor(state.focusToday*60)%60===0) state.coins += 1;
 
   if(state.remaining <= 0){
     state.remaining = 0;
@@ -253,6 +267,82 @@ function tick(){
   }
   render();
 }
+
+
+function renderEffects(){
+  const layer=$('effectLayer');
+  layer.innerHTML='';
+  $('lightGlow').classList.toggle('hidden',!state.effects.includes('light'));
+  app.classList.toggle('rainy',state.effects.includes('rain'));
+  if(state.effects.includes('rain')){
+    for(let i=0;i<70;i++){const d=document.createElement('span');d.className='drop';d.style.left=Math.random()*100+'%';d.style.animationDuration=(.65+Math.random()*.5)+'s';d.style.animationDelay=(-Math.random()*1.5)+'s';d.style.setProperty('--drift',(Math.random()*30-15)+'px');layer.appendChild(d)}
+  }
+  if(state.effects.includes('snow')){
+    for(let i=0;i<45;i++){const d=document.createElement('span');d.className='flake';d.textContent='•';d.style.left=Math.random()*100+'%';d.style.animationDuration=(5+Math.random()*6)+'s';d.style.animationDelay=(-Math.random()*8)+'s';d.style.setProperty('--drift',(Math.random()*100-50)+'px');layer.appendChild(d)}
+  }
+  if(state.effects.includes('spring')){
+    for(let i=0;i<28;i++){const d=document.createElement('span');d.className='petal';d.textContent=i%2?'✿':'·';d.style.left=Math.random()*100+'%';d.style.animationDuration=(5+Math.random()*5)+'s';d.style.animationDelay=(-Math.random()*8)+'s';d.style.setProperty('--drift',(Math.random()*140-70)+'px');layer.appendChild(d)}
+  }
+}
+
+function openCoinPanel(){
+  $('modal').classList.remove('hidden');
+  $('modalTitle').textContent='Coins · how you earn';
+  $('modalContent').innerHTML=`
+    <div class="coin-row"><span>⏱️ Study / focus</span><span>+1 coin / minute</span></div>
+    <div class="coin-row"><span>✅ Complete a task</span><span>+5 coins</span></div>
+    <div class="coin-row"><span>🔥 10-day streak</span><span>+20 coins</span></div>
+    <p class="reward-note">Coins are earned from completed activity. Your backend will be the source of truth once Django is connected.</p>`;
+}
+
+function openStreakPanel(){
+  const current=state.streak;
+  const milestones=[10,20,30,40,50,100];
+  $('modal').classList.remove('hidden');
+  $('modalTitle').textContent=`🔥 ${current}-day streak`;
+  const max=100;
+  const positions=milestones.map(n=>Math.min(96,Math.max(4,n/max*100)));
+  $('modalContent').innerHTML=`
+    <div class="streak-line">${milestones.map((n,i)=>`<div class="milestone ${current>=n?'current':''} ${n===100?'big':''}" style="left:${positions[i]}%"><i></i><span>${n}</span></div>`).join('')}</div>
+    <p style="font-size:12px;margin-top:12px">${current<100?`Next milestone: <b>${milestones.find(n=>n>current)||100} days</b>.`:'100-day milestone reached.'}</p>
+    <p class="reward-note">Keep building your streak to unlock exclusive badges, rewards, tournament and league opportunities. The 100-day streak is the big milestone prize.</p>`;
+}
+
+function openTimerEditor(){
+  $('modal').classList.remove('hidden');
+  $('modalTitle').textContent='Focus duration';
+  $('modalContent').innerHTML=`
+    <p class="reward-note" style="margin-top:0;margin-bottom:13px">Choose any focus duration. This changes the next/reset session.</p>
+    <div class="custom-time"><input class="input" id="durationInput" type="number" min="1" max="240" value="${Math.max(1,Math.round(state.duration/60))}"><span class="muted">minutes</span><button class="primary" id="saveDuration">Set</button></div>`;
+  $('saveDuration').onclick=()=>{
+    const minutes=Math.max(1,Math.min(240,Number($('durationInput').value)||60));
+    state.duration=minutes*60; state.remaining=state.duration; state.running=false; clearInterval(interval); sessionStart=null; render(); $('modal').classList.add('hidden'); toast(`Focus timer set to ${minutes} min.`);
+  };
+}
+
+$('coinMetric').addEventListener('click',openCoinPanel);
+$('streakMetric').addEventListener('click',openStreakPanel);
+$('editTimer').addEventListener('click',openTimerEditor);
+
+$('weatherBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  $('weatherMenu').classList.toggle('hidden');
+  document.querySelectorAll('.quick-option').forEach(b=>b.classList.toggle('active',state.effects.includes(b.dataset.effect)));
+});
+
+document.querySelectorAll('.quick-option').forEach(btn=>btn.addEventListener('click',()=>{
+  const effect=btn.dataset.effect;
+  const idx=state.effects.indexOf(effect);
+  if(idx>=0){state.effects.splice(idx,1)}
+  else if(state.effects.length<2){state.effects.push(effect)}
+  else {toast('Choose up to 2 atmosphere effects.');return}
+  document.querySelectorAll('.quick-option').forEach(b=>b.classList.toggle('active',state.effects.includes(b.dataset.effect)));
+  renderEffects();
+}));
+
+document.addEventListener('click',e=>{
+  if(!$('weatherMenu').contains(e.target) && e.target!==$('weatherBtn')) $('weatherMenu').classList.add('hidden');
+});
 
 function toggleTimer(){
   state.running = !state.running;
@@ -280,14 +370,14 @@ $("taskForm").addEventListener("submit",e=>{
   e.preventDefault();
   const value=$("taskInput").value.trim();
   if(!value) return;
-  state.tasks.push({text:value,done:false});
+  state.tasks.push({text:value,done:false,rewarded:false});
   $("taskInput").value="";
   render();
 });
 
 $("taskList").addEventListener("change",e=>{
   const i=e.target.dataset.task;
-  if(i !== undefined) state.tasks[i].done=e.target.checked;
+  if(i !== undefined){ state.tasks[i].done=e.target.checked; if(state.tasks[i].done && !state.tasks[i].rewarded){ state.tasks[i].rewarded=true; state.coins+=5; toast("Task complete. +5 coins 🪙"); }}
   render();
 });
 
@@ -358,16 +448,8 @@ function openModal(type){
 
   if(type==="weather"){
     $("modalTitle").textContent="Atmosphere";
-    content.innerHTML=`
-      <p class="muted" style="font-size:12px;margin-bottom:15px">V1 atmosphere: rain.</p>
-      <button class="${state.weather?"primary":"secondary"}" id="weatherToggle">
-        ${state.weather?"Rain ON":"Rain OFF"}
-      </button>`;
-    $("weatherToggle").onclick=()=>{
-      state.weather=!state.weather;
-      app.classList.toggle("rainy",state.weather);
-      openModal("weather");
-    };
+    content.innerHTML=`<p class="muted" style="font-size:12px;margin-bottom:15px">Use the 🌦️ button in the dock for quick settings. You can combine up to two effects.</p><button class="primary" id="openWeatherQuick">Open quick settings</button>`;
+    $("openWeatherQuick").onclick=()=>{$("modal").classList.add("hidden");$("weatherMenu").classList.remove("hidden");};
   }
 
   if(type==="music"){
@@ -489,6 +571,8 @@ $("authForm").addEventListener("submit",e=>{
   $("auth").classList.add("hidden");
   toast(`Welcome, ${name}. Time to lock in.`);
 });
+
+$("socialBtn").addEventListener("click",()=>{openModal("stats");$("modalTitle").textContent="Socials";$("modalContent").innerHTML=`<p class="reward-note">Community links will live here: Instagram, Discord, and future FocusSpace spaces.</p>`;});
 
 function toast(message){
   const el=$("toast");
