@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusSpace — V1</title>
+<style>
+:root{
+  --bg:#0a0b0e;--panel:rgba(20,22,27,.78);--panel2:rgba(28,31,38,.86);
+  --line:rgba(255,255,255,.10);--text:#f4f5f7;--muted:#8e949f;
+  --accent:#fff;--accentText:#0b0c0f;--danger:#ff6b6b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+button,input{font:inherit}button{cursor:pointer;color:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.hidden{display:none!important}
+.app{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 42%,#191c23 0,#0d0f13 42%,#090a0d 100%)}
+.app.rainy:before{content:"";position:absolute;inset:-30%;pointer-events:none;opacity:.13;background-image:linear-gradient(105deg,transparent 48%,#fff 49%,transparent 50%);background-size:9px 38px;transform:rotate(8deg);animation:rain .45s linear infinite}
+@keyframes rain{to{transform:translate3d(-18px,38px,0) rotate(8deg)}}
+.view{position:absolute;inset:0;transition:opacity .35s,transform .35s}
+.view.off{opacity:0;pointer-events:none;transform:scale(.985)}
+.topbar{position:absolute;top:24px;left:28px;right:28px;display:flex;justify-content:space-between;align-items:flex-start;z-index:10}
+.brand{font-weight:750;letter-spacing:-.7px;font-size:18px}
+.brand span{color:var(--muted);font-weight:500}
+.metrics{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.metric,.icon-btn,.dock,.task-panel,.space-panel,.auth-card{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 15px 50px rgba(0,0,0,.22)}
+.metric{padding:9px 12px;border-radius:12px;font-size:12px;color:var(--muted)}
+.metric b{color:var(--text);font-weight:650;margin-left:5px}
+.icon-btn{border-radius:12px;border:1px solid var(--line);background:var(--panel);padding:9px 11px;font-size:12px}
+.icon-btn:hover{background:var(--panel2)}
+.timer-wrap{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);text-align:center;z-index:3}
+.timer{font-size:clamp(72px,12vw,150px);font-weight:200;letter-spacing:-7px;line-height:.95;font-variant-numeric:tabular-nums}
+.timer-label{margin-top:18px;color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase}
+.timer-actions{display:flex;gap:9px;justify-content:center;margin-top:24px}
+.primary,.secondary{border-radius:12px;padding:11px 17px;border:1px solid var(--line)}
+.primary{background:var(--accent);color:var(--accentText);border-color:#fff;font-weight:650}
+.secondary{background:var(--panel);color:var(--text)}
+.primary:hover{opacity:.9}.secondary:hover{background:var(--panel2)}
+.task-panel{position:absolute;left:28px;top:105px;width:min(330px,calc(100% - 56px));border-radius:18px;padding:16px;z-index:5}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.panel-head h3{font-size:13px}.muted{color:var(--muted)}
+.add-task{display:flex;gap:7px;margin-bottom:11px}.add-task input{min-width:0;flex:1}
+.input{background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:10px;padding:10px 11px;color:var(--text);outline:none}
+.input::placeholder{color:#686e79}
+.task-list{display:grid;gap:7px;max-height:310px;overflow:auto}
+.task{display:flex;align-items:center;gap:9px;padding:9px;border-radius:11px;background:rgba(255,255,255,.035)}
+.task input{accent-color:#fff}.task.done span{text-decoration:line-through;color:#666c76}.task span{font-size:12px;flex:1}.task button{background:none;border:0;color:#686e79}
+.dock{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;gap:7px;padding:8px;border-radius:17px;z-index:20}
+.dock button{width:45px;height:45px;border:0;border-radius:12px;background:rgba(255,255,255,.055);font-size:19px;transition:transform .18s,background .18s}
+.dock button:hover{transform:translateY(-8px) scale(1.13);background:rgba(255,255,255,.12)}
+.bottom-left,.bottom-right{position:absolute;bottom:25px;z-index:10}.bottom-left{left:28px}.bottom-right{right:28px}
+.space-btn{padding:12px 16px;border-radius:13px;background:#fff;color:#0b0c0f;border:0;font-weight:700}
+.social{color:#737985;font-size:11px}
+.goal{position:absolute;right:28px;top:105px;width:170px;z-index:5}
+.goal p{font-size:11px;color:var(--muted);margin-bottom:8px}.bar{height:5px;border-radius:10px;background:#252932;overflow:hidden}.fill{height:100%;width:0;background:#fff;transition:width .3s}
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.48);backdrop-filter:blur(8px);z-index:50;display:grid;place-items:center;padding:20px}
+.modal-card{width:min(420px,100%);background:#15181d;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.5)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.modal-head h2{font-size:18px}
+.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.item{border:1px solid var(--line);border-radius:13px;padding:13px;background:rgba(255,255,255,.035);text-align:center}.item .emoji{font-size:29px}.item p{font-size:11px;margin:7px 0;color:var(--muted)}.item button{width:100%;border:0;border-radius:8px;padding:7px;background:#fff;color:#111;font-size:11px}.item button:disabled{opacity:.35;cursor:not-allowed}
+#space{background:linear-gradient(135deg,#101217,#15181f 55%,#0b0d11)}
+.space-toolbar{position:absolute;top:24px;left:28px;right:28px;display:flex;justify-content:space-between;z-index:10}
+.space-panel{border-radius:14px;padding:9px;display:flex;gap:6px}.space-canvas{position:absolute;inset:95px 25px 75px;border-radius:24px;border:1px dashed rgba(255,255,255,.06)}
+.space-item{position:absolute;user-select:none;touch-action:none;font-size:46px;cursor:grab;filter:drop-shadow(0 10px 15px rgba(0,0,0,.25))}
+.space-item:active{cursor:grabbing}
+.pin-card{text-align:center}.pin-card h2{margin-bottom:8px}.pin-card p{font-size:12px;color:var(--muted);margin-bottom:17px}.pin-input{width:150px;text-align:center;font-size:24px;letter-spacing:8px;margin:auto}
+.toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%) translateY(10px);background:#fff;color:#111;padding:10px 15px;border-radius:10px;font-size:12px;opacity:0;pointer-events:none;transition:.25s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%)}
+.auth{position:absolute;inset:0;display:grid;place-items:center;z-index:80;background:radial-gradient(circle at 50% 40%,#1a1d24,#090a0d 65%);padding:20px}.auth-card{width:min(410px,100%);border-radius:22px;padding:30px}.auth-card h1{font-size:32px;letter-spacing:-1.5px}.auth-card>p{color:var(--muted);font-size:13px;margin:7px 0 25px}.auth-form{display:grid;gap:12px}.auth-form label{font-size:11px;color:var(--muted)}.auth-form input{width:100%;margin-top:6px}.auth-switch{text-align:center;margin-top:17px!important}.link{border:0;background:none;text-decoration:underline;color:#fff}.error{font-size:11px;color:var(--danger);min-height:14px}
+@media(max-width:700px){.task-panel{top:90px}.goal{display:none}.metrics .metric:nth-child(n+3){display:none}.topbar{left:16px;right:16px}.bottom-left{display:none}.bottom-right{right:16px}.dock{bottom:14px}.space-canvas{inset:90px 12px 70px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<section class="view" id="dashboard">
+  <div class="topbar">
+    <div class="brand">FocusSpace <span>• V1</span></div>
+    <div class="metrics">
+      <div class="metric">🪙 <b id="coins">30</b></div>
+      <div class="metric">🔥 <b id="streak">1</b></div>
+      <div class="metric">🎯 <b id="goalText">0 / 60 min</b></div>
+      <div class="metric">🕒 <b id="clock">--:--</b></div>
+    </div>
+  </div>
+
+  <div class="task-panel">
+    <div class="panel-head"><h3>Today's tasks</h3><span class="muted" id="taskCount">0</span></div>
+    <form class="add-task" id="taskForm">
+      <input class="input" id="taskInput" placeholder="Add a task..." maxlength="100" required>
+      <button class="primary" type="submit">+</button>
+    </form>
+    <div class="task-list" id="taskList"></div>
+  </div>
+
+  <div class="goal">
+    <p>Daily focus goal · 60 min</p>
+    <div class="bar"><div class="fill" id="goalFill"></div></div>
+  </div>
+
+  <div class="timer-wrap">
+    <div class="timer" id="timer">60:00</div>
+    <div class="timer-label" id="timerLabel">ready to focus</div>
+    <div class="timer-actions">
+      <button class="primary" id="startBtn">Start focus</button>
+      <button class="secondary" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="bottom-left"><div class="social">focusspace · build your own pace</div></div>
+  <div class="bottom-right"><button class="space-btn" id="spaceBtn">My Space ↗</button></div>
+
+  <nav class="dock" aria-label="Productivity tools">
+    <button data-open="shop" title="Shop">🛒</button>
+    <button data-open="weather" title="Weather">🌧️</button>
+    <button data-open="music" title="Music">🎵</button>
+    <button data-open="stats" title="Stats">📊</button>
+  </nav>
+</section>
+
+<section class="view off" id="space">
+  <div class="space-toolbar">
+    <div class="space-panel">
+      <button class="icon-btn" data-open="weather">🌧️</button>
+      <button class="icon-btn" data-open="music">🎵</button>
+      <button class="icon-btn" id="spaceTimer">⏱️ <span id="spaceTimerText">60:00</span></button>
+    </div>
+    <div class="space-panel">
+      <button class="icon-btn" data-open="shop">🛒 Shop</button>
+      <button class="icon-btn" id="inventoryBtn">🎒 Items</button>
+    </div>
+  </div>
+
+  <div class="space-canvas" id="spaceCanvas"></div>
+  <div class="timer-wrap" id="spaceTimerWrap">
+    <div class="timer" id="spaceTimerBig">60:00</div>
+    <div class="timer-label">your space · lock in</div>
+  </div>
+
+  <div class="bottom-right"><button class="space-btn" id="exitSpace">← Dashboard</button></div>
+</section>
+
+<div class="modal hidden" id="modal">
+  <div class="modal-card">
+    <div class="modal-head"><h2 id="modalTitle">Shop</h2><button class="icon-btn" id="closeModal">✕</button></div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="pinModal">
+  <div class="modal-card pin-card">
+    <h2>My Space is private.</h2>
+    <p>Enter your 4-digit Space PIN.</p>
+    <input class="input pin-input" id="pinInput" inputmode="numeric" maxlength="4" placeholder="••••">
+    <div style="margin-top:16px"><button class="primary" id="pinSubmit">Unlock</button></div>
+    <div class="error" id="pinError" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="auth" id="auth">
+  <div class="auth-card">
+    <h1>FocusSpace</h1>
+    <p>Productivity doesn't have to look like a productivity app.</p>
+    <form class="auth-form" id="authForm">
+      <div><label>Name</label><input class="input" id="authName" placeholder="Your name" required></div>
+      <div><label>Email</label><input class="input" id="authEmail" type="email" placeholder="you@example.com" required></div>
+      <div><label>Password</label><input class="input" id="authPassword" type="password" minlength="8" placeholder="Minimum 8 characters" required></div>
+      <div class="error" id="authError"></div>
+      <button class="primary" type="submit">Enter FocusSpace</button>
+    </form>
+    <p class="auth-switch">Demo login — Django API can replace this later.</p>
+  </div>
+</div>
+
+<script>
+const state = {
+  coins: 30,
+  streak: 1,
+  focusToday: 0,
+  duration: 60 * 60,
+  remaining: 60 * 60,
+  running: false,
+  tasks: [],
+  weather: false,
+  music: false,
+  items: [
+    {id:"plant",name:"Plant",emoji:"🪴",price:15,owned:true},
+    {id:"cat",name:"Cat",emoji:"🐈",price:30,owned:false},
+    {id:"bear",name:"Plush Bear",emoji:"🧸",price:45,owned:false},
+    {id:"trophy",name:"Trophy",emoji:"🏆",price:80,owned:false},
+    {id:"lamp",name:"Lamp",emoji:"💡",price:25,owned:false},
+    {id:"star",name:"Star",emoji:"⭐",price:20,owned:false}
+  ],
+  placed: [{id:"plant",x:22,y:34}]
+};
+
+let interval = null;
+let sessionStart = null;
+
+const $ = id => document.getElementById(id);
+const app = $("app");
+
+function formatTime(sec){
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec/60).toString().padStart(2,"0");
+  const s = (sec%60).toString().padStart(2,"0");
+  return `${m}:${s}`;
+}
+
+function render(){
+  $("coins").textContent = state.coins;
+  $("streak").textContent = state.streak;
+  $("goalText").textContent = `${Math.floor(state.focusToday)} / 60 min`;
+  $("goalFill").style.width = `${Math.min(100,state.focusToday/60*100)}%`;
+
+  const time = formatTime(state.remaining);
+  $("timer").textContent = time;
+  $("spaceTimerText").textContent = time;
+  $("spaceTimerBig").textContent = time;
+
+  $("timerLabel").textContent = state.running ? "focus session running" : "ready to focus";
+  $("startBtn").textContent = state.running ? "Pause" : "Start focus";
+
+  $("taskCount").textContent = state.tasks.filter(t=>!t.done).length;
+  $("taskList").innerHTML = state.tasks.map((t,i)=>`
+    <div class="task ${t.done?"done":""}">
+      <input type="checkbox" ${t.done?"checked":""} data-task="${i}">
+      <span>${escapeHTML(t.text)}</span>
+      <button data-delete="${i}" aria-label="Delete task">×</button>
+    </div>
+  `).join("");
+
+  renderSpaceItems();
+}
+
+function escapeHTML(str){
+  return str.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+
+function tick(){
+  if(!state.running) return;
+  state.remaining--;
+  state.focusToday = Math.min(60,state.focusToday + 1/60);
+
+  if(state.remaining <= 0){
+    state.remaining = 0;
+    state.running = false;
+    clearInterval(interval);
+    state.coins += 30;
+    toast("Focus session complete. +30 coins 🪙");
+  }
+  render();
+}
+
+function toggleTimer(){
+  state.running = !state.running;
+  if(state.running){
+    if(!sessionStart) sessionStart = Date.now();
+    clearInterval(interval);
+    interval = setInterval(tick,1000);
+  }else{
+    clearInterval(interval);
+  }
+  render();
+}
+
+$("startBtn").addEventListener("click",toggleTimer);
+
+$("resetBtn").addEventListener("click",()=>{
+  state.running=false;
+  clearInterval(interval);
+  state.remaining=state.duration;
+  sessionStart=null;
+  render();
+});
+
+$("taskForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const value=$("taskInput").value.trim();
+  if(!value) return;
+  state.tasks.push({text:value,done:false});
+  $("taskInput").value="";
+  render();
+});
+
+$("taskList").addEventListener("change",e=>{
+  const i=e.target.dataset.task;
+  if(i !== undefined) state.tasks[i].done=e.target.checked;
+  render();
+});
+
+$("taskList").addEventListener("click",e=>{
+  const i=e.target.dataset.delete;
+  if(i !== undefined){
+    state.tasks.splice(Number(i),1);
+    render();
+  }
+});
+
+function openSpace(){
+  $("pinModal").classList.remove("hidden");
+  $("pinInput").value="";
+  $("pinError").textContent="";
+  setTimeout(()=>$("pinInput").focus(),50);
+}
+
+$("spaceBtn").addEventListener("click",openSpace);
+
+$("pinSubmit").addEventListener("click",()=>{
+  const pin=$("pinInput").value;
+  if(pin !== "1234"){
+    $("pinError").textContent="Demo PIN is 1234.";
+    return;
+  }
+  $("pinModal").classList.add("hidden");
+  $("dashboard").classList.add("off");
+  $("space").classList.remove("off");
+});
+
+$("pinInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter") $("pinSubmit").click();
+});
+
+$("exitSpace").addEventListener("click",()=>{
+  $("space").classList.add("off");
+  $("dashboard").classList.remove("off");
+});
+
+function openModal(type){
+  $("modal").classList.remove("hidden");
+  const content=$("modalContent");
+
+  if(type==="shop"){
+    $("modalTitle").textContent=`Shop · ${state.coins} coins`;
+    content.innerHTML=`<div class="shop-grid">${state.items.map(item=>`
+      <div class="item">
+        <div class="emoji">${item.emoji}</div>
+        <p>${item.name}<br>🪙 ${item.price}</p>
+        <button data-buy="${item.id}" ${item.owned || state.coins<item.price?"disabled":""}>
+          ${item.owned?"Owned":state.coins<item.price?"Need coins":"Unlock"}
+        </button>
+      </div>
+    `).join("")}</div>`;
+    content.querySelectorAll("[data-buy]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const item=state.items.find(x=>x.id===btn.dataset.buy);
+        if(!item || item.owned || state.coins<item.price)return;
+        state.coins-=item.price;
+        item.owned=true;
+        toast(`${item.name} unlocked ✨`);
+        openModal("shop");
+        render();
+      });
+    });
+  }
+
+  if(type==="weather"){
+    $("modalTitle").textContent="Atmosphere";
+    content.innerHTML=`
+      <p class="muted" style="font-size:12px;margin-bottom:15px">V1 atmosphere: rain.</p>
+      <button class="${state.weather?"primary":"secondary"}" id="weatherToggle">
+        ${state.weather?"Rain ON":"Rain OFF"}
+      </button>`;
+    $("weatherToggle").onclick=()=>{
+      state.weather=!state.weather;
+      app.classList.toggle("rainy",state.weather);
+      openModal("weather");
+    };
+  }
+
+  if(type==="music"){
+    $("modalTitle").textContent="Music";
+    content.innerHTML=`
+      <p class="muted" style="font-size:12px;margin-bottom:15px">Music integration placeholder for V1.</p>
+      <button class="${state.music?"primary":"secondary"}" id="musicToggle">
+        ${state.music?"♫ Playing":"▶ Start music"}
+      </button>`;
+    $("musicToggle").onclick=()=>{
+      state.music=!state.music;
+      openModal("music");
+      toast(state.music?"Music started":"Music paused");
+    };
+  }
+
+  if(type==="stats"){
+    $("modalTitle").textContent="Your progress";
+    content.innerHTML=`
+      <div style="display:grid;gap:10px">
+        <div class="item">🔥 Streak<br><b>${state.streak} day</b></div>
+        <div class="item">🎯 Focus today<br><b>${Math.floor(state.focusToday)} min</b></div>
+        <div class="item">🪙 Coins<br><b>${state.coins}</b></div>
+      </div>`;
+  }
+}
+
+document.querySelectorAll("[data-open]").forEach(btn=>{
+  btn.addEventListener("click",()=>openModal(btn.dataset.open));
+});
+
+$("closeModal").addEventListener("click",()=>$("modal").classList.add("hidden"));
+
+$("modal").addEventListener("click",e=>{
+  if(e.target===$("modal")) $("modal").classList.add("hidden");
+});
+
+function renderSpaceItems(){
+  $("spaceCanvas").innerHTML="";
+  state.placed.forEach((placed,index)=>{
+    const item=state.items.find(x=>x.id===placed.id);
+    if(!item) return;
+
+    const el=document.createElement("div");
+    el.className="space-item";
+    el.textContent=item.emoji;
+    el.style.left=placed.x+"%";
+    el.style.top=placed.y+"%";
+    el.title=item.name;
+    el.dataset.index=index;
+
+    el.addEventListener("pointerdown",startDrag);
+    $("spaceCanvas").appendChild(el);
+  });
+}
+
+function startDrag(e){
+  const el=e.currentTarget;
+  const index=Number(el.dataset.index);
+  const canvas=$("spaceCanvas");
+  el.setPointerCapture(e.pointerId);
+
+  const move=ev=>{
+    const rect=canvas.getBoundingClientRect();
+    state.placed[index].x=Math.max(1,Math.min(95,(ev.clientX-rect.left)/rect.width*100));
+    state.placed[index].y=Math.max(1,Math.min(88,(ev.clientY-rect.top)/rect.height*100));
+    el.style.left=state.placed[index].x+"%";
+    el.style.top=state.placed[index].y+"%";
+  };
+
+  const up=()=>{
+    el.removeEventListener("pointermove",move);
+    el.removeEventListener("pointerup",up);
+  };
+
+  el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up);
+}
+
+$("inventoryBtn").addEventListener("click",()=>{
+  $("modal").classList.remove("hidden");
+  $("modalTitle").textContent="Your items";
+  $("modalContent").innerHTML=`
+    <p class="muted" style="font-size:12px;margin-bottom:12px">
+      Click an owned item to place it in My Space.
+    </p>
+    <div class="shop-grid">
+      ${state.items.filter(x=>x.owned).map(item=>`
+        <div class="item">
+          <div class="emoji">${item.emoji}</div>
+          <p>${item.name}</p>
+          <button data-place="${item.id}">Place</button>
+        </div>
+      `).join("")}
+    </div>`;
+  $("modalContent").querySelectorAll("[data-place]").forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.dataset.place;
+      state.placed.push({id,x:20+Math.random()*60,y:15+Math.random()*65});
+      $("modal").classList.add("hidden");
+      render();
+      toast("Placed in My Space ✨");
+    };
+  });
+});
+
+$("spaceTimer").addEventListener("click",()=>{
+  $("spaceTimerWrap").classList.toggle("hidden");
+});
+
+$("authForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=$("authName").value.trim();
+  const password=$("authPassword").value;
+  if(password.length<8){
+    $("authError").textContent="Password must be at least 8 characters.";
+    return;
+  }
+  $("auth").classList.add("hidden");
+  toast(`Welcome, ${name}. Time to lock in.`);
+});
+
+function toast(message){
+  const el=$("toast");
+  el.textContent=message;
+  el.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>el.classList.remove("show"),2200);
+}
+
+function updateClock(){
+  $("clock").textContent=new Intl.DateTimeFormat("en-IN",{hour:"2-digit",minute:"2-digit"}).format(new Date());
+}
+
+setInterval(updateClock,1000);
+updateClock();
+render();
+</script>
+</div>
+</body>
+</html>
